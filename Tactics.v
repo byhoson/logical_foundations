@@ -103,12 +103,15 @@ Proof.
     just hypotheses in the context.  Remember that [Search] is
     your friend.) *)
 
+Search rev.
+
 Theorem rev_exercise1 : forall (l l' : list nat),
      l = rev l' ->
      l' = rev l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros l l' H. rewrite -> H. rewrite -> rev_involutive. reflexivity. Qed.
 (** [] *)
+  
 
 (** **** Exercise: 1 star, standard, optional (apply_rewrite)  
 
@@ -273,7 +276,9 @@ Example injection_ex3 : forall (X : Type) (x y z : X) (l j : list X),
   y :: l = x :: j ->
   x = y.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X x y z l j eq1 eq2.
+  injection eq1. intros H1 H2.
+  injection eq2. intros H3 H4. rewrite H4. reflexivity. Qed.
 (** [] *)
 
 (** So much for injectivity of constructors.  What about disjointness?
@@ -345,7 +350,7 @@ Example discriminate_ex3 :
     x :: y :: l = [] ->
     x = z.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X x y z l j H. discriminate H. Qed. 
 (** [] *)
 
 (** The injectivity of constructors allows us to reason that
@@ -420,7 +425,18 @@ Theorem plus_n_n_injective : forall n m,
      n = m.
 Proof.
   intros n. induction n as [| n'].
-  (* FILL IN HERE *) Admitted.
+  - intros m H. destruct m.
+    + reflexivity.
+    + discriminate H.
+  - intros m H. simpl in H. rewrite <- plus_n_Sm in H. destruct m.
+    + discriminate H.
+    + simpl in H. rewrite <- plus_n_Sm in H.
+      apply S_injective in H. apply S_injective in H.
+      apply IHn' in H. rewrite -> H. reflexivity.
+Qed.
+   
+                                  
+                                            
 (** [] *)
 
 (* ################################################################# *)
@@ -577,7 +593,17 @@ Proof.
 Theorem eqb_true : forall n m,
     n =? m = true -> n = m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n.
+  - intros m eq. destruct m.
+    + reflexivity.
+    + discriminate eq.
+  - intros m eq. destruct m.
+    + discriminate eq.
+    + simpl in eq. apply IHn in eq. rewrite -> eq. reflexivity.
+Qed.
+
+      
+                         
 (** [] *)
 
 (** **** Exercise: 2 stars, advanced (eqb_true_informal)  
@@ -707,7 +733,13 @@ Theorem nth_error_after_last: forall (n : nat) (X : Type) (l : list X),
      length l = n ->
      nth_error l n = None.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n X l. generalize dependent n. induction l.
+  - intros n H. reflexivity.
+  - intros n H. destruct n.
+    + discriminate H.
+    + simpl in H. injection H as H2. apply IHl in H2. simpl. apply H2.
+Qed.
+
 (** [] *)
 
 (* ################################################################# *)
@@ -888,13 +920,35 @@ Fixpoint split {X Y : Type} (l : list (X*Y))
 (** Prove that [split] and [combine] are inverses in the following
     sense: *)
 
+Lemma list_cons_eq : forall X (l1 l2 : list X) (x : X),
+  l1 = l2 -> x :: l1 = x :: l2.
+Proof.
+  intros X l1 l2 x H. rewrite H. reflexivity.
+Qed.
+
 Theorem combine_split : forall X Y (l : list (X * Y)) l1 l2,
   split l = (l1, l2) ->
   combine l1 l2 = l.
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
-
+  intros X Y l. induction l.
+  - intros l1 l2. destruct l1.
+    { destruct l2.
+      { intros H.  reflexivity. }
+      { intros H. discriminate H. } }
+    { destruct l2.
+      { intros H. reflexivity. }
+      { intros H. discriminate H. } }
+  - intros l1 l2 H. destruct l1, l2.
+    + simpl in H. destruct x. destruct (split l). discriminate H.
+    + simpl in H. destruct x. destruct (split l). discriminate H.
+    + simpl in H. destruct x. destruct (split l). discriminate H.
+    + simpl in H. destruct x. destruct (split l). simpl.
+      injection H as eq1 eq2 eq3 eq4. rewrite eq1. rewrite eq3.
+      apply list_cons_eq. apply IHl. rewrite eq2. rewrite eq4. reflexivity.
+Qed.
+      
+      
+      
 (** The [eqn:] part of the [destruct] tactic is optional: We've chosen
     to include it most of the time, just for the sake of
     documentation, but many Coq proofs omit it.
@@ -968,7 +1022,17 @@ Theorem bool_fn_applied_thrice :
   forall (f : bool -> bool) (b : bool),
   f (f (f b)) = f b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros f b. destruct b, (f true) eqn:eq1, (f false) eqn:eq2.
+  - rewrite -> eq1. rewrite -> eq1. reflexivity.
+  - rewrite -> eq1. rewrite -> eq1. reflexivity.
+  - rewrite -> eq1. reflexivity.
+  - rewrite -> eq2. reflexivity.
+  - rewrite -> eq1. rewrite -> eq1. reflexivity.
+  - rewrite -> eq2. rewrite -> eq2. reflexivity.
+  - rewrite -> eq1. rewrite -> eq2. reflexivity.
+  - rewrite -> eq2. rewrite -> eq2. reflexivity.
+Qed.
+                     
 (** [] *)
 
 (* ################################################################# *)
