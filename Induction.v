@@ -262,7 +262,10 @@ Proof.
 Theorem evenb_S : forall n : nat,
   evenb (S n) = negb (evenb n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n as [| n' IHn'].
+  - simpl. reflexivity.
+  - rewrite -> IHn'. simpl. rewrite -> negb_involutive.
+    reflexivity. Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (destruct_induction)  
@@ -270,7 +273,8 @@ Proof.
     Briefly explain the difference between the tactics [destruct]
     and [induction].
 
-(* FILL IN HERE *)
+Induction introduces a new hypothesis, while destruction does not.
+
 *)
 
 (* Do not modify the following line: *)
@@ -503,7 +507,9 @@ Definition manual_grade_for_plus_comm_informal : option (nat*string) := None.
 Theorem plus_swap : forall n m p : nat,
   n + (m + p) = m + (n + p).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m p. rewrite -> plus_assoc.
+  assert (H: n + m = m + n). { rewrite -> plus_comm. reflexivity. }
+  rewrite -> H. rewrite <- plus_assoc. reflexivity. Qed. 
 
 (** Now prove commutativity of multiplication.  (You will probably
     need to define and prove a separate subsidiary theorem to be used
@@ -513,6 +519,8 @@ Proof.
 Theorem mult_comm : forall m n : nat,
   m * n = n * m.
 Proof.
+  intros m n.
+ 
   (* FILL IN HERE *) Admitted.
 (** [] *)
 
