@@ -157,13 +157,13 @@ Inductive grumble (X:Type) : Type :=
 
 (** Which of the following are well-typed elements of [grumble X] for
     some type [X]?  (Add YES or NO to each line.)
-      - [d (b a 5)]
-      - [d mumble (b a 5)]
-      - [d bool (b a 5)]
-      - [e bool true]
-      - [e mumble (b c 0)]
-      - [e bool (b c 0)]
-      - [c]  *)
+      - [d (b a 5)] NO 
+      - [d mumble (b a 5)] YES
+      - [d bool (b a 5)] YES
+      - [e bool true] YES
+      - [e mumble (b c 0)] YES
+      - [e bool (b c 0)] NO
+      - [c] NO *)
 
 (*Check d (b a 5).*)
 Check d mumble (b a 5).
@@ -444,12 +444,18 @@ Proof.
 Theorem rev_app_distr: forall X (l1 l2 : list X),
   rev (l1 ++ l2) = rev l2 ++ rev l1.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X l1 l2. induction l1 as [| h l' IHl'].
+  - simpl. rewrite -> app_nil_r. reflexivity.
+  - simpl. rewrite -> IHl'. rewrite -> app_assoc. reflexivity.
+Qed.
 
 Theorem rev_involutive : forall X : Type, forall l : list X,
   rev (rev l) = l.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros X l. induction l as [| n l' IHl'].
+  - reflexivity.
+  - simpl. rewrite -> rev_app_distr. rewrite -> IHl'. reflexivity.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1005,7 +1011,9 @@ Proof. reflexivity. Qed.
 Theorem fold_length_correct : forall X (l : list X),
   fold_length l = length l.
 Proof.
-(* FILL IN HERE *) Admitted.
+  intros X l. induction l as [| n l' IHl'].
+  - reflexivity.
+  - simpl. rewrite <- IHl'. reflexivity.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (fold_map)  
