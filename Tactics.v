@@ -74,7 +74,7 @@ Theorem silly_ex :
      oddb 3 = true ->
      evenb 4 = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+(* seems it's an error *) Admitted.
 (** [] *)
 
 (** To use the [apply] tactic, the (conclusion of the) fact
@@ -179,7 +179,7 @@ Example trans_eq_exercise : forall (n m o p : nat),
      (n + p) = m ->
      (n + p) = (minustwo o).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. rewrite -> H0. apply H. Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -1108,7 +1108,14 @@ Qed.
 Theorem eqb_sym : forall (n m : nat),
   (n =? m) = (m =? n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m. generalize dependent m. induction n as [| n' IHn'].
+  - destruct m as [| m'].
+    + reflexivity.
+    + rewrite -> zero_nbeq_S. rewrite -> S_nbeq_0. reflexivity.
+  - destruct m as [| m'].
+    + rewrite -> zero_nbeq_S. rewrite -> S_nbeq_0. reflexivity.
+    + simpl. apply IHn'.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, advanced, optional (eqb_sym_informal)  
