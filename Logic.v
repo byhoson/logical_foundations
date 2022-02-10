@@ -407,7 +407,7 @@ Proof.
 Fact not_implies_our_not : forall (P:Prop),
   ~ P -> (forall (Q:Prop), P -> Q).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros P H Q H0. apply H in H0. destruct H0. Qed. 
 (** [] *)
 
 (** Inequality is a frequent enough example of negated statement
@@ -595,12 +595,18 @@ Qed.
 Theorem iff_refl : forall P : Prop,
   P <-> P.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split.
+  - intros. apply H.
+  - intros. apply H.
+Qed.
 
 Theorem iff_trans : forall P Q R : Prop,
   (P <-> Q) -> (Q <-> R) -> (P <-> R).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros P Q R [H0 H1] [H2 H3]. split.
+  - intros H4. apply H0 in H4. apply H2 in H4. apply H4.
+  - intros H4. apply H3 in H4. apply H1 in H4. apply H4.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (or_distributes_over_and)  *)
@@ -851,7 +857,28 @@ Qed.
 Lemma In_app_iff : forall A l l' (a:A),
   In a (l++l') <-> In a l \/ In a l'.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros A l l' a. split.
+  - induction l as [| n l'' IHl''].
+    + simpl. intros H. right. apply H.
+    + simpl. intros [H1 | H2].
+      * left. left. apply H1.
+      * apply IHl'' in H2. destruct H2 as [H2' | H2''].
+        { left. right. apply H2'. }
+        { right. apply H2''. }
+  - induction l as [| n l'' IHl''].
+    + simpl. intros H. destruct H.
+      * destruct H.
+      * apply H.
+    + simpl. intros H. destruct H.
+      * destruct H.
+       { left. apply H. }
+       { assert (H1: In a l'' \/ In a l').
+         { left. apply H. }
+         apply IHl'' in H1. right. apply H1. }
+      *  assert (H1: In a l'' \/ In a l').
+         { right. apply H. }
+         apply IHl'' in H1. right. apply H1.
+Qed. 
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, recommended (All)  
@@ -1217,8 +1244,25 @@ Definition tr_rev {X} (l : list X) : list X :=
     call); a decent compiler will generate very efficient code in this
     case.  Prove that the two definitions are indeed equivalent. *)
 
+Lemma tr_rev_suffix : forall (X : Type) (l1 l2 l3: list X), 
+  rev_append l1 (l2 ++ l3) = rev_append l1 l2 ++ l3.
+Proof.
+  intros X l1. induction l1 as [| n l1' IHl1'].
+  - reflexivity.
+  - intros. simpl. 
+    assert (H: n :: l2 ++ l3 = (n :: l2) ++ l3). { reflexivity. }
+    rewrite -> H. rewrite -> IHl1'. reflexivity.
+Qed.
+
 Lemma tr_rev_correct : forall X, @tr_rev X = @rev X.
-(* FILL IN HERE *) Admitted.
+Proof.
+  intros X. apply functional_extensionality. intros l.
+  induction l as [| n l' IHl'].
+  - reflexivity.
+  - simpl. rewrite <- IHl'. unfold tr_rev. simpl.
+    assert (H: [n] = [] ++ [n]). { reflexivity. }
+    rewrite -> H. apply tr_rev_suffix.
+Qed.
 (** [] *)
 
 (* ================================================================= *)
@@ -1256,8 +1300,16 @@ Theorem evenb_double_conv : forall n,
   exists k, n = if evenb n then double k
                 else S (double k).
 Proof.
-  (* Hint: Use the [evenb_S] lemma from [Induction.v]. *)
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n as [| n' IHn'].
+  - simpl. exists 0. reflexivity.
+  - destruct IHn' as [k0 Hk0]. destruct (evenb n') eqn:Hn'.
+    + assert (H : evenb (S n') = false).
+      { rewrite -> evenb_S. rewrite -> Hn'. reflexivity. }
+      rewrite -> H. rewrite -> Hk0. exists k0. reflexivity.
+    + assert (H : evenb (S n') = true).
+      { rewrite -> evenb_S. rewrite -> Hn'. reflexivity. }
+      rewrite -> H. rewrite -> Hk0. exists (S k0). reflexivity.
+Qed.
 (** [] *)
 
 Theorem even_bool_prop : forall n,
