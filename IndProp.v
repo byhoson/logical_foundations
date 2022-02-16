@@ -148,7 +148,10 @@ Qed.
 Theorem ev_double : forall n,
   even (double n).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n. induction n as [| n' IHn'].
+  - simpl. apply ev_0.
+  - simpl. apply ev_SS. apply IHn'.
+Qed.
 (** [] *)
 
 (* ################################################################# *)
@@ -292,7 +295,7 @@ Theorem one_not_even' : ~ even 1.
 Theorem SSSSev__even : forall n,
   even (S (S (S (S n)))) -> even n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n H. inversion H. inversion H1. apply H3. Qed.
 (** [] *)
 
 (** **** Exercise: 1 star, standard (even5_nonsense)  
@@ -302,7 +305,7 @@ Proof.
 Theorem even5_nonsense :
   even 5 -> 2 + 2 = 9.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros H. inversion H. inversion H1. inversion H3. Qed.
 (** [] *)
 
 (** The [inversion] tactic does quite a bit of work. When
@@ -452,7 +455,10 @@ Qed.
 (** **** Exercise: 2 stars, standard (ev_sum)  *)
 Theorem ev_sum : forall n m, even n -> even m -> even (n + m).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m Hn Hm. induction Hn as [| n' IHn'].
+  - simpl. apply Hm.
+  - simpl. apply ev_SS. apply IHIHn'.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, advanced, optional (even'_ev)  
@@ -483,7 +489,14 @@ Proof.
 Theorem ev_ev__ev : forall n m,
   even (n+m) -> even n -> even m.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros n m Hnm Hn.  
+  
+  
+  
+  induction Hn as [| n' IHn'].
+  - simpl in Hnm. apply Hnm.
+  - simpl in Hnm. inversion Hnm. apply IHIHn' in H0. apply H0.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (ev_plus_plus)  
@@ -617,7 +630,10 @@ Inductive next_even : nat -> nat -> Prop :=
 
 Lemma le_trans : forall m n o, m <= n -> n <= o -> m <= o.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros m n o H1 H2. induction H2 as [| o' IH2o'].
+  - apply H1.
+  - apply le_S in IHIH2o'. apply IHIH2o'.
+Qed.
 
 Theorem O_le_n : forall n,
   0 <= n.
@@ -1019,13 +1035,16 @@ Qed.
 Lemma empty_is_empty : forall T (s : list T),
   ~ (s =~ EmptySet).
 Proof.
-  (* FILL IN HERE *) Admitted.
+ intros T s H. inversion H. Qed.
 
 Lemma MUnion' : forall T (s : list T) (re1 re2 : @reg_exp T),
   s =~ re1 \/ s =~ re2 ->
   s =~ Union re1 re2.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros T s re1 re2 H. destruct H as [H1 | H2].
+  - apply MUnionL. apply H1.
+  - apply MUnionR. apply H2.
+Qed.
 
 (** The next lemma is stated in terms of the [fold] function from the
     [Poly] chapter: If [ss : list (list T)] represents a sequence of
@@ -1036,7 +1055,14 @@ Lemma MStar' : forall T (ss : list (list T)) (re : reg_exp),
   (forall s, In s ss -> s =~ re) ->
   fold app ss [] =~ Star re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros T ss re H. induction ss as [| hd tl IHtl].
+  - simpl. apply MStar0.
+  - simpl. apply MStarApp.
+    + apply H. simpl. left. reflexivity.
+    + apply IHtl. intros s H1. assert(H2 : In s (hd :: tl)).
+      { simpl. right. apply H1. } 
+      apply H in H2. apply H2.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (reg_exp_of_list_spec)  
@@ -1130,13 +1156,51 @@ Qed.
     regular expression matches some string. Prove that your function
     is correct. *)
 
-Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint re_not_empty {T : Type} (re : @reg_exp T) : bool :=
+  match re with
+  | EmptySet => false
+  | EmptyStr
+  | Char _ => true
+  | App re1 re2 => andb (re_not_empty re1) (re_not_empty re2)
+  | Union re1 re2 => orb (re_not_empty re1) (re_not_empty re2)
+  | Star re => true
+  end.    
 
 Lemma re_not_empty_correct : forall T (re : @reg_exp T),
   (exists s, s =~ re) <-> re_not_empty re = true.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros T re. split.
+  - intros [s' Hs']. 
+    induction Hs'
+      as [| x'
+          | s1 re1 s2 re2 Hmatch1 IH1 Hmatch2 IH2
+          | s1 re1 re2 Hmatch IH | re1 s2 re2 Hmatch IH
+          | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2].
+    + reflexivity.
+    + reflexivity.
+    + simpl. rewrite IH1. rewrite IH2. reflexivity.
+    + simpl. rewrite IH. reflexivity.
+    + simpl. rewrite IH. rewrite orb_true_iff. right. reflexivity.
+    + reflexivity.
+    + reflexivity.
+  - intros H. induction re 
+      as [| | x | re1 IH1 re2 IH2 | re1 IH1 re2 IH2 | re IH].
+    + discriminate H.
+    + exists []. apply MEmpty.
+    + exists [x]. apply MChar.
+    + simpl in H. apply andb_true_iff in H. destruct H as [H1 H2].
+      destruct (IH1 H1) as [s1 Hs1].
+      destruct (IH2 H2) as [s2 Hs2].
+      exists (s1 ++ s2). apply MApp.
+      { apply Hs1. }
+      { apply Hs2. }
+    + simpl in H. apply orb_true_iff in H. destruct H as [H1 | H2]. 
+      * destruct (IH1 H1) as [s' Hs'].
+        exists s'. apply MUnionL. apply Hs'.
+      * destruct (IH2 H2) as [s' Hs'].
+        exists s'. apply MUnionR. apply Hs'.
+    + exists []. apply MStar0.
+Qed.      
 (** [] *)
 
 (* ================================================================= *)
@@ -1275,7 +1339,27 @@ Lemma MStar'' : forall T (s : list T) (re : reg_exp),
     s = fold app ss []
     /\ forall s', In s' ss -> s' =~ re.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros T s re H1. remember (Star re) as re'.
+  induction H1
+    as [|x'|s1 re1 s2' re2 Hmatch1 IH1 Hmatch2 IH2
+        |s1 re1 re2 Hmatch IH|re1 s2' re2 Hmatch IH
+        |re''|s1 s2' re'' Hmatch1 IH1 Hmatch2 IH2].
+  - discriminate.
+  - discriminate.
+  - discriminate.
+  - discriminate.
+  - discriminate.
+  - exists []. simpl. split.
+    + reflexivity.
+    + intros s' H. destruct H.
+  - destruct (IH2 Heqre') as [ss' [H1ss' H2ss']].
+    exists (s1::ss'). split.
+    + simpl. rewrite <- H1ss'. reflexivity.
+    + intros s' Hs'. destruct Hs'.
+      { rewrite -> H in Hmatch1. inversion Heqre'.
+        rewrite -> H1 in Hmatch1. apply Hmatch1. }
+      { apply H2ss' in H. apply H. }
+Qed.
 (** [] *)
 
 (** **** Exercise: 5 stars, advanced (pumping)  
@@ -1333,6 +1417,35 @@ Qed.
     a (constructive!) way to generate strings matching [re] that are
     as long as we like. *)
 
+Lemma le_aux : forall (a b c : nat), a + b <= c -> a <= c.
+Proof.
+  intros a b c H. 
+  assert (H1 : a <= a +b). { apply le_plus_l. }
+  apply (le_trans a (a+b)).
+  apply H1. apply H.
+Qed.  
+
+Lemma len_aux : forall {X : Type} (l : list X), 
+  1 <= length l -> l <> [].
+Proof.
+  intros X l H. induction l as [| hd tl IHtl] eqn:Hl.
+  - simpl in H. apply PeanoNat.Nat.nle_succ_diag_l in H.
+    destruct H.
+  - assert (Hin : In hd l). 
+    { rewrite -> Hl. simpl. left. reflexivity. }
+    apply in_not_nil in Hin. rewrite <- Hl. apply Hin.  
+Qed.
+
+Lemma napp_star : forall T (re : @reg_exp T) s (n : nat), 
+  s =~ Star re -> napp n s =~ Star re.
+Proof.
+  intros T re s n H. induction n as [| n' IHn'].
+  - simpl. apply MStar0.
+  - simpl. apply star_app.
+    + apply H. 
+    + apply IHn'.
+Qed.
+
 Lemma pumping : forall T (re : @reg_exp T) s,
   s =~ re ->
   pumping_constant re <= length s ->
@@ -1359,7 +1472,67 @@ Proof.
        | re | s1 s2 re Hmatch1 IH1 Hmatch2 IH2 ].
   - (* MEmpty *)
     simpl. omega.
-  (* FILL IN HERE *) Admitted.
+  - (* MChar *)
+    simpl. omega.
+  - (* MApp *)
+    simpl. intros Hlen. rewrite -> app_length in Hlen.
+    apply Nat.add_le_cases in Hlen.
+    destruct Hlen as [Hlen1 | Hlen2].
+    + apply IH1 in Hlen1. destruct Hlen1 as [s11 [s12 [s13 Hs1]]].
+      exists s11. exists s12. exists (s13 ++ s2).
+      destruct Hs1 as [Hs1_1 [Hs1_2 Hs1_3]].
+      split.
+      * rewrite -> Hs1_1.
+        rewrite <- app_assoc. rewrite <- app_assoc. reflexivity.
+      * split. apply Hs1_2.
+        intros m. rewrite -> app_assoc. rewrite -> app_assoc.
+        apply MApp.
+        { rewrite <- app_assoc. apply Hs1_3. }
+        { apply Hmatch2. }
+    + apply IH2 in Hlen2. destruct Hlen2 as [s21 [s22 [s23 Hs2]]].
+      exists (s1 ++ s21). exists s22. exists s23.
+      destruct Hs2 as [Hs2_1 [Hs2_2 Hs2_3]].
+      split.
+      * rewrite -> Hs2_1.
+        rewrite <- app_assoc. reflexivity.
+      * split. apply Hs2_2.
+        intros m. rewrite <- app_assoc.
+        apply MApp.
+        { apply Hmatch1. }
+        { apply Hs2_3. }
+  - (* MUnionL *)
+    simpl. intros Hlen. apply le_aux in Hlen.
+    apply IH in Hlen. destruct Hlen as [s11 [s12 [s13 Hs1]]].
+    exists s11. exists s12. exists s13.
+    destruct Hs1 as [Hs1_1 [Hs1_2 Hs1_3]].
+    split.
+    + apply Hs1_1.
+    + split. apply Hs1_2.
+      intros m. apply MUnionL. apply Hs1_3.
+  - (* MUnionR *)
+    simpl. intros Hlen. rewrite -> Nat.add_comm in Hlen.
+    apply le_aux in Hlen.
+    apply IH in Hlen. destruct Hlen as [s11 [s12 [s13 Hs1]]].
+    exists s11. exists s12. exists s13.
+    destruct Hs1 as [Hs1_1 [Hs1_2 Hs1_3]].
+    split.
+    + apply Hs1_1.
+    + split. apply Hs1_2.
+      intros m. apply MUnionR. apply Hs1_3.
+  - (* MStar0 *)
+    simpl. omega.
+  - (* MStarApp *)
+    simpl. intros Hlen. (* rewrite -> app_length in Hlen. *)
+    exists []. exists (s1 ++ s2). exists []. simpl.
+    split.
+    + rewrite -> app_nil_r. reflexivity.
+    + split.
+      * apply len_aux in Hlen. apply Hlen.
+      * simpl. intros m. rewrite -> app_nil_r.
+        assert (Hs: s1++s2 =~ Star re).
+        { apply MStarApp. apply Hmatch1. apply Hmatch2. }
+        apply napp_star. apply Hs.   
+Qed.    
 
 End Pumping.
 (** [] *)
