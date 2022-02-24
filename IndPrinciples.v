@@ -63,7 +63,10 @@ Proof.
 Theorem plus_one_r' : forall n:nat,
   n + 1 = S n.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply nat_ind.
+  - reflexivity.
+  - simpl. intros n Hn. rewrite -> Hn. reflexivity.
+Qed.
 (** [] *)
 
 (** Coq generates induction principles for every datatype defined with
@@ -181,8 +184,10 @@ Inductive byntree : Type :=
     Give an [Inductive] definition of [ExSet]: *)
 
 Inductive ExSet : Type :=
-  (* FILL IN HERE *)
-.
+  | con1 (b : bool)
+  | con2 (n : nat) (e : ExSet).
+
+Check ExSet_ind.
 (** [] *)
 
 (* ################################################################# *)
