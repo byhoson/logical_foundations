@@ -436,13 +436,23 @@ Qed.
     it is sound.  Use the tacticals we've just seen to make the proof
     as elegant as possible. *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BEq a1 a2 => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2 => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | _ => b
+  end.
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros b. destruct b; 
+  try reflexivity;
+  simpl;
+  rewrite optimize_0plus_sound; 
+  rewrite optimize_0plus_sound;
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (optimize)  
@@ -798,13 +808,43 @@ Qed.
     [aevalR], and prove that it is equivalent to [beval]. *)
 
 Inductive bevalR: bexp -> bool -> Prop :=
-(* FILL IN HERE *)
+  | E_BTrue : bevalR BTrue true
+  | E_BFalse : bevalR BFalse false
+  | E_BEq (a1 a2 : aexp) (n1 n2 : nat) : 
+      aevalR a1 n1 -> aevalR a2 n2 -> bevalR (BEq a1 a2) (n1 =? n2)
+  | E_BLe (a1 a2 : aexp) (n1 n2 : nat) : 
+      aevalR a1 n1 -> aevalR a2 n2 -> bevalR (BLe a1 a2) (n1 <=? n2)
+  | E_BNot (b : bexp) (v : bool) : 
+      bevalR b v -> bevalR (BNot b) (negb v)
+  | E_BAnd (b1 b2 : bexp) (v1 v2 : bool) :
+      bevalR b1 v1 -> bevalR b2 v2 -> bevalR (BAnd b1 b2) (v1 && v2)
 .
 
 Lemma beval_iff_bevalR : forall b bv,
   bevalR b bv <-> beval b = bv.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  intros. split.
+  - intros. induction H; try reflexivity;
+    try (simpl; rewrite aeval_iff_aevalR in H; 
+    rewrite aeval_iff_aevalR in H0;
+    rewrite H; rewrite H0; reflexivity).
+    + simpl. rewrite IHbevalR. reflexivity.
+    + simpl. rewrite IHbevalR1. rewrite IHbevalR2. reflexivity.
+  - generalize dependent bv. induction b.
+    + intros. simpl in H. rewrite <- H. apply E_BTrue.
+    + intros. simpl in H. rewrite <- H. apply E_BFalse.
+    + intros. simpl in H. rewrite <- H. apply E_BEq;
+      rewrite aeval_iff_aevalR; reflexivity.
+    + intros. simpl in H. rewrite <- H. apply E_BLe;
+      rewrite aeval_iff_aevalR; reflexivity.
+    + intros. simpl in H. assert (H' : beval b = negb bv).
+      { apply negb_sym. rewrite H. reflexivity. }
+      apply IHb in H'. apply E_BNot in H'.
+      rewrite negb_involutive_reverse. apply H'.
+    + intros. simpl in H. rewrite <- H. apply E_BAnd.
+      * apply IHb1. reflexivity. 
+      * apply IHb2. reflexivity.
+Qed.
 (** [] *)
 
 End AExp.
@@ -1469,7 +1509,12 @@ Example ceval_example2:
     X ::= 0;; Y ::= 1;; Z ::= 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  apply E_Seq with (X !-> 0).
+  - apply E_Ass. reflexivity.
+  - apply E_Seq with (Y !-> 1; X !-> 0).
+    + apply E_Ass. reflexivity.
+    + apply E_Ass. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard, optional (pup_to_n)  
@@ -1586,7 +1631,13 @@ Proof.
       contradictory (and so can be solved in one step with
       [discriminate]). *)
 
-  (* FILL IN HERE *) Admitted.
+  induction contra; try discriminate; try discriminate Heqloopdef.
+  - inversion Heqloopdef. rewrite -> H1 in H. 
+    simpl in H. discriminate H.
+  - inversion Heqloopdef. rewrite H1 in IHcontra2.
+    rewrite H2 in IHcontra2. simpl in IHcontra2.
+    apply IHcontra2. reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 3 stars, standard (no_whiles_eqv)  
